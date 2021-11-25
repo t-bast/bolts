@@ -527,7 +527,6 @@ same length. It's particularly useful when adding dummy hops at the end of a
 blinded route, to prevent the sender from figuring out which node is the final
 recipient.
 
-
 ### Onion Message Payload Format
 
 Onion messages have an onion with an alternate `hop_payload`
@@ -554,39 +553,40 @@ hop.
 
 1. subtype: `onionmsg_path`
 2. data:
-    * [`point`:`node_id`]
+    * [`point`:`blinded_node_id`]
     * [`u16`:`enclen`]
     * [`enclen*byte`:`encrypted_recipient_data`]
-
 
 #### Requirements
 
 The writer:
+
 - For the non-final nodes' `onionmsg_payload`:
-  - MUST set `enctlv` to a valid `encrypted_data_tlv` stream containing `next_node_id`.
-  - MUST encrypt `enctlv` as detailed in [Route Blinding](#route-blinding).
+  - MUST set `encrypted_data_tlv` to a valid `encrypted_data_tlv` stream containing `next_node_id`.
+  - MUST encrypt `encrypted_data_tlv` as detailed in [Route Blinding](#route-blinding).
   - MAY include `padding`.
   - MUST NOT set `path_id`.
 - For the final node's `onionmsg_payload`:
   - if the final node is permitted to reply:
-    - MUST set `reply_path` `blinding` to the initial blinding factor for the `next_node_id`
+    - MUST set `reply_path` `blinding` to the initial blinding factor for the first node in the reply path.
     - MUST set `reply_path` `first_node_id` to the unblinded node id of the first node in the reply path.
     - For every `reply_path` `path`:
-      - MUST set `node_id` to the blinded node id to encrypt the onion hop for.
-      - MUST encrypt `enctlv` as detailed in [Route Blinding](#route-blinding).
-      - MUST set `enctlv` to a valid `encrypted_data_tlv` stream which meets the requirements
+      - MUST set `blinded_node_id` to the blinded node id to encrypt the onion hop for.
+      - MUST set `encrypted_data_tlv` to a valid `encrypted_data_tlv` stream which meets the requirements
         of the `onionmsg_payload` when used by the recipient.
+      - MUST encrypt `encrypted_data_tlv` as detailed in [Route Blinding](#route-blinding).
       - MAY use `path_id` to contain a secret so it can recognize use of this `reply_path`.
   - otherwise:
     - MUST NOT set `reply_path`.
 
 The reader:
+
 - if it is not the final node according to the onion encryption:
-  - if `enctlv` is not present, or does not decrypt with the shared secret from the given `blinding` parameter:
+  - if `encrypted_data_tlv` is not present, or does not decrypt with the shared secret from the given `blinding` parameter:
     - MUST drop the message.
-  - if the `enctlv` is not a valid `encrypted_data_tlv` tlvstream or does not contain `next_node_id`:
+  - if the `encrypted_data_tlv` is not a valid `encrypted_data_tlv` stream or does not contain `next_node_id`:
     - MUST drop the message.
-  - if the `enctlv` contains `path_id`:
+  - if the `encrypted_data_tlv` contains `path_id`:
     - MUST drop the message.
   - otherwise:
     - MUST ignore `padding`, if any.
@@ -596,21 +596,20 @@ The reader:
 - otherwise (it is the final node):
   - if `path_id` is set and corresponds to a path the reader has previously published in a `reply_path`:
     - if the onion message is not a reply to that previous onion:
-	  - MUST ignore the onion message
+      - MUST ignore the onion message
   - otherwise (unknown or unset `path_id`):
     - if the onion message is a reply to an onion message which contained a `path_id`:
-	  - MUST respond (or not respond) exactly as if it did not send the initial onion message.
+      - MUST respond (or not respond) exactly as if it did not send the initial onion message.
   - if it wants to send a reply:
     - MUST create an onion message using `reply_path`.
     - MUST send the reply via `onion_message` to the node indicated by
-        the `first_node_id`, using `reply_path` `blinding` to send
-        along `reply_path` `path`.
-
+      the `first_node_id`, using `reply_path` `blinding` to send along
+      `reply_path` `path`.
 
 #### Rationale
 
 Care must be taken that replies are only accepted using the exact
-reply_path given, otherwise probing is possible.  That means checking
+reply path given, otherwise probing is possible.  That means checking
 both ways: non-replies don't use the reply path, and replies always
 use the reply path.
 
@@ -1395,8 +1394,8 @@ The _origin node_:
 Onion messages allow peers to use existing connections to query for
 invoices (see [BOLT 12](12-offer-encoding.md)).  Like gossip messages,
 they are not associated with a particular local channel.  Like HTLCs,
-they use [onion messages](#onion-message-payload-format) protocol for
-end-to-end encryption.
+they use an [onion encryption](#onion-message-payload-format) protocol
+for end-to-end encryption.
 
 Onion messages are unreliable: in particular, they are designed to
 be cheap to process and require no storage to forward.  As a result,
@@ -1415,12 +1414,14 @@ For consistency, all onion messages use [Route Blinding](#route-blinding).
 ## Requirements
 
 The writer:
+
 - MUST populate the per-hop payloads as described in [Onion Message Payload Format](onion-message-payload-format).
 - SHOULD retry via a different route if it expects a response and
   doesn't receive one after a reasonable period.
 - SHOULD set `len` to 1366 or 32834.
 
 The reader:
+
 - MUST handle the per-hop payloads as described in [Onion Message Payload Format](onion-message-payload-format).
 - SHOULD accept onion messages from peers without an established channel.
 - MAY rate-limit messages by dropping them.
@@ -1428,17 +1429,15 @@ The reader:
 ## Rationale
 
 All onion messages are blinded, even though this overhead is not
-always necessary (33 bytes here, the 16-byte MAC for each enctlv in
-the onion).  This blinding allows nodes to use a path provided by
+always necessary.  This blinding allows nodes to use a path provided by
 others without knowing its contents.  Using it universally simplifies
 implementations a little, and makes it more difficult to distinguish
 onion messages.
 
 `len` allows larger messages to be sent than the standard 1300 bytes
-allowed for an HTLC onion, but this should be used sparingly as it is
-reduces anonymity set, hence the recommendation that it either look
+allowed for an HTLC onion, but this should be used sparingly as it
+reduces the anonymity set, hence the recommendation that it either look
 like an HTLC onion, or if larger, be a fixed size.
-
 
 # Test Vector
 
