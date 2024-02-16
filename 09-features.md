@@ -56,6 +56,7 @@ The Context column decodes as follows:
 | 50/51 | `option_zeroconf`                 | Understands zeroconf channel types                        | INT      | `option_scid_alias`         | [BOLT #2][bolt02-channel-ready]                                       |
 | 60/61 | `option_simple_close`             | Simplified closing negotiation                            | IN       | `option_shutdown_anysegwit` | [BOLT #2][bolt02-simple-close]                                        |
 | 62/63 | `option_splice`                   | Allows replacing the funding transaction with a new one   | IN       |                             | [BOLT #2](02-peer-protocol.md#channel-splicing)                       |
+| 64/65 | `option_zero_reserve`             | This node may accept zero-reserve channels                | IN       |                             | [BOLT #2][bolt02-open]                                                |
 
 ## Requirements
 
