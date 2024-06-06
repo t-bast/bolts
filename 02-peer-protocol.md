@@ -3005,7 +3005,10 @@ A receiving node:
         - MUST send its `tx_signatures` for that funding transaction.
     - if `next_funding_txid` matches the latest funding transaction:
       - if that transaction has reached acceptable depth:
-        - MUST send `splice_locked`.
+        - MUST send `splice_locked`.        
+    - if it also sets `next_funding_txid` in its own `channel_reestablish`, but the
+      values don't match:
+      - MUST send an `error` and fail the channel.
     - otherwise:
       - MUST send `tx_abort` to let the sending node know that they can forget
         this funding transaction.
