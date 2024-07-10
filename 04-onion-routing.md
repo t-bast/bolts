@@ -298,7 +298,7 @@ The reader:
       - MUST return an error if `current_path_key` is not present.
       - MUST use `current_path_key` as $`E_i`$
       - SHOULD add a random delay before returning errors.
-    - MUST return an error if `encrypted_recipient_data` does not decrypt to a valid `encrypted_data_tlv` as described in [Route Blinding](#route-blinding) requirements for "The reader of the `encrypted_recipient_data`".
+    - MUST return an error if `encrypted_recipient_data` does not decrypt to a valid `encrypted_data_tlv` as described in the [Route Blinding](#route-blinding) requirements for "The reader of the `encrypted_recipient_data`".
     - If `payment_constraints` is present:
       - MUST return an error if:
         - the expiry is greater than `encrypted_recipient_data.payment_constraints.max_cltv_expiry`.
@@ -455,6 +455,7 @@ instructions to those nodes on where to forward the onion.
     * [`enclen*byte`:`encrypted_recipient_data`]
 
 A blinded path consists of:
+
 1. an initial introduction point (`first_node_id`)
 2. an initial key to share a secret with the first node_id (`first_path_key`)
 3. a series of tweaked node ids (`path.blinded_node_id`)
@@ -468,9 +469,10 @@ keys are a simple chain, so each node can derive the next `path_key` without
 having to be told explicitly.
 
 From these shared secrets, Dave creates and encrypts three `encrypted_data_tlv`s:
-1. blob_bob: For Bob to tell him to forward to Carol
-2. blob_carol: For Carol to tell her to forward to him
-3. blob_dave: For himself to indicate the path was used, and any metadata he wants.
+
+1. encrypted_data_bob: For Bob to tell him to forward to Carol
+2. encrypted_data_carol: For Carol to tell her to forward to him
+3. encrypted_data_dave: For himself to indicate the path was used, and any metadata he wants.
 
 To mask the node ids, he also derives three blinding factors from the
 shared secrets, which turn Bob into Bob', Carol into Carol' and Dave
@@ -479,18 +481,28 @@ into Dave'.
 So this is the `blinded_path` he hands to Alice.
 
 1. `first_node_id`: Bob
-2. `first_path_key`: the first path key for Bob 
-3. `path`: [Bob', bob_blob], [Carol', carol_blob], [Dave', dave_blob]
+2. `first_path_key`: the first path key for Bob
+3. `path`: [Bob', encrypted_data_bob], [Carol', encrypted_data_carol], [Dave', encrypted_data_dave]
 
-Alice encrypts an onion to Bob', Carol', Dave' and gives it to Bob
-with the `first_path_key`.
+If Alice also uses a blinded path to reach Bob, she encrypts an onion to
+Bob', Carol', Dave' and includes the `first_path_key` in the payload for
+Bob. This is how onion messages are constructed.
 
-Bob uses the path key to derive the shared secret which
-gives him both the tweak to decrypt the onion so he can decrypt it
-(created by Alice for Bob' instead of Bob) and also to decrypt the
-`encrypted_data_tlv` which indicates where the onion is to be
-forwarded (i.e. Carol).  Bob derives the next `path_key` and sends it
-an the onion to Carol.
+If Alice uses a normal path to reach Bob, she encrypteds an onion to
+Bob, Carol', Dave' and includes the `first_path_key` in the payload for
+Bob. This is used for payment onions to allow nodes between Alice and
+Bob to be unaware that a blinded path is used downstream.
+
+Bob uses the `first_path_key` to derive the shared secret which lets
+him decrypt the `encrypted_data_tlv` which indicates where the onion is
+to be forwarded (i.e. Carol). Bob derives the next `path_key` and sends
+it and the onion to Carol.
+
+Carol uses the path key to get both the tweak to decrypt the onion
+(created by Alice for Carol' instead of Carol) and also to decrypt the
+`encrypted_data_tlv` which indicates where the onion is to be forwarded
+(i.e. Dave). Carol derives the next `path_key` and sends it and the
+onion to Dave.
 
 ### Requirements
 
@@ -523,10 +535,10 @@ The reader of the `blinded_path`:
 - MUST create its own onion to reach the `first_node_id`
 - For the first entry in `path`:
   - if it is sending a payment:
-    - MAY encrypt the first blinded path onion to `first_node_id` and include `blinding` as `current_blinding_point`
+    - MAY encrypt the first blinded path onion to `first_node_id` and include `path_key` as `current_path_key`.
   - if it does not do that:
     - MUST encrypt the first blinded path onion to the first `blinded_node_id`.
-    - MUST set `next_blinding_override` in the prior onion payload to `blinding`.
+    - MUST set `next_path_key_override` in the prior onion payload to `path_key`.
   - MUST include the first `path` `encrypted_recipient_data` in each onion payload within the blinded path.
 - For each successive entry in `path`:
   - MUST encrypt the onion to the corresponding `blinded_node_id`.

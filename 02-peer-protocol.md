@@ -2040,10 +2040,12 @@ A receiving node:
   - if other `id` violations occur:
     - MAY send a `warning` and close the connection, or send an
       `error` and fail the channel.
-  - MUST decrypt `onion_routing_packet` as specified in [Onion Decryption](04-onion-routing.md#onion-decryption) using `payment_hash` as `associated_data` (and `path_key` if specified).
+  - MUST decrypt `onion_routing_packet` as specified in [Onion Decryption](04-onion-routing.md#onion-decryption):
+    - MUST use `path_key` if specified to derive the onion decryption key.
+    - MUST use `payment_hash` as `associated_data`.
   - If that fails, or the payload is not a valid `payload` TLV:
-    - MUST report the failure to the origin node as described in [Returning Errors](04-onion-routing.md#returning-errors)
-  - MUST follow the requirements for processing the payload under [Failure Messages](04-onion-routing.md#failure-messages)
+    - MUST report the failure to the origin node as described in [Returning Errors](04-onion-routing.md#returning-errors).
+    - MUST follow the requirements for processing the payload under [Failure Messages](04-onion-routing.md#failure-messages).
 
 The `onion_routing_packet` contains an obfuscated list of hops and instructions for each hop along the path.
 It commits to the HTLC by setting the `payment_hash` as associated data, i.e. includes the `payment_hash` in the computation of HMACs.
