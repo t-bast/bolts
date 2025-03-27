@@ -1630,8 +1630,12 @@ The sending node:
   - MUST NOT send `splice_init` if it is not the quiescence initiator.
   - MUST NOT send `splice_init` before sending and receiving `channel_ready`.
   - MUST NOT send `splice_init` while another splice is being negotiated.
-  - MUST NOT send `splice_init` if another splice has been negotiated but
-    `splice_locked` has not been sent and received.
+  - If `option_zeroconf` has been negotiated:
+    - MAY send `splice_init` before sending and receiving `splice_locked` for
+      the last splice to initiate a new splice spending the last one.
+  - Otherwise:
+    - MUST NOT send `splice_init` if another splice has been negotiated but
+      `splice_locked` has not been sent and received.
   - MUST NOT send `splice_init` if it has previously sent `shutdown`.
   - If it is splicing funds out of the channel:
     - MUST set `funding_contribution_satoshis` to a negative value matching
