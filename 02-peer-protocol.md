@@ -1673,6 +1673,15 @@ The receiving node:
   - Otherwise (it rejects the splice):
     - MUST respond with `tx_abort`.
 
+#### Rationale
+
+When using `option_zeroconf`, nodes may want to wait for the splice transaction
+to be published before sending `splice_locked`. This can be useful when using
+`bitcoind`, which will properly lock the transaction inputs only once it has
+published that transaction, and thus won't double-spend itself. There is no
+reason to reject starting another splice negotiation while this is ongoing, so
+we allow sending `splice_init` before `splice_locked` has been received.
+
 ### The `splice_ack` Message
 
 1. type: 81 (`splice_ack`)
@@ -1866,6 +1875,7 @@ The sending node:
   - MUST NOT send `tx_init_rbf` if it is not the quiescence initiator.
   - MAY send `tx_init_rbf` even if it is not the splice initiator.
   - MUST NOT send `tx_init_rbf` if it has previously sent `splice_locked`.
+  - MUST NOT send `tx_init_rbf` is `option_zeroconf` has been negotiated.
   - MAY set `funding_output_contribution` to a different value than the
     `funding_contribution_satoshis` used in `splice_init` or `splice_ack`,
     or in previous RBF attempts.
@@ -1878,6 +1888,9 @@ The receiving node:
     - MUST send a `warning` and close the connection or send an `error`
       and fail the channel.
   - If the sender previously sent `splice_locked`:
+    - MUST send a `warning` and close the connection or send an `error`
+      and fail the channel.
+  - If `option_zeroconf` has been negotiated:
     - MUST send a `warning` and close the connection or send an `error`
       and fail the channel.
   - If `funding_output_contribution` is negative and its absolute value is
@@ -1935,6 +1948,21 @@ signatures for each of these commitment transactions.
                       +---------------+        +-----------+
 ```
 
+If `option_zeroconf` has been negotiated, splice transactions cannot be RBF-ed,
+but there can be a chain of splice transactions spending each other instead:
+
+```
++------------+        +-----------+
+| Funding Tx |---+--->| Commit Tx |
++------------+   |    +-----------+
+                 |    +-----------+        +-----------+
+                 +--->| Splice Tx |---+--->| Commit Tx |
+                      +-----------+   |    +-----------+
+                                      |    +-----------+        +-----------+
+                                      +--->| Splice Tx |------->| Commit Tx |
+                                           +-----------+        +-----------+
+```
+
 The splice completes by exchanging `splice_locked` messages, at which point
 the locked transaction replaces the previous funding transaction.
 
@@ -1951,13 +1979,46 @@ Each node:
   - If any splice transaction reaches acceptable depth:
     - MUST send `splice_locked` with the `txid` of that transaction.
 
+The receiving node:
+  - If `splice_txid` doesn't match any of its pending splice transactions:
+    - MUST ignore the message.
+  - Otherwise, must treat this `splice_txid` and all of its ancestors as
+    locked by the sending node. 
+
 Once a node has sent and received `splice_locked`:
-  - MUST consider the locked splice transaction to be the new funding
-    transaction for all future `commitment_signed` messages and splice
-    negotiations.
-  - SHOULD discard the previous funding transaction and RBF attempts.
-  - MUST send `announcement_signatures` with `short_channel_id` matching
-    the locked splice transaction.
+  - If the `splice_txid`s match:
+    - MUST stop sending `commitment_signed` for RBF attempts and ancestors
+      of this splice transaction.
+    - MAY discard RBF attempts and ancestor transactions.
+    - MUST send `announcement_signatures` with `short_channel_id` matching
+      this splice transaction.
+  - When `option_zeroconf` has been negotiated, if one of the `splice_txid`s
+    is an ancestor of the other `splice_txid`:
+    - MUST consider this ancestor transaction as locked.
+    - MUST stop sending `commitment_signed` for ancestors of this ancestor
+      transaction.
+    - MAY discard ancestors of this ancestor transaction.
+    - SHOULD send `announcement_signatures` with `short_channel_id` matching
+      this ancestor transaction.
+  - If the `splice_txid`s are for different RBF candidates:
+    - SHOULD ignore the message.
+    - MAY send an `error` and fail the channel.
+
+##### Rationale
+
+When `option_zeroconf` has been negotiated, nodes can create chains of splice
+transactions and may receive `splice_locked` for a splice transaction that is
+not the most recent one. That's fine, it means that we can already lock and
+discard all ancestor transactions, and `splice_locked` for the latest splice
+transaction will be exchanged next and nodes will eventually converge to the
+latest splice transaction.
+
+If nodes are on a different fork of the blockchain, they may disagree on which
+RBF attempt has been confirmed: in that case nodes can either close the channel
+or simply ignore `splice_locked` and wait for one of the forks to eventually
+replace the other, at which point both nodes should agree on which RBF attempt
+confirmed and exchange `splice_locked` for the same `splice_txid` to complete
+the splice.
 
 ## Channel Close
 
