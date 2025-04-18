@@ -1875,7 +1875,7 @@ The sending node:
   - MUST NOT send `tx_init_rbf` if it is not the quiescence initiator.
   - MAY send `tx_init_rbf` even if it is not the splice initiator.
   - MUST NOT send `tx_init_rbf` if it has previously sent `splice_locked`.
-  - MUST NOT send `tx_init_rbf` is `option_zeroconf` has been negotiated.
+  - MUST NOT send `tx_init_rbf` if `option_zeroconf` has been negotiated.
   - MAY set `funding_output_contribution` to a different value than the
     `funding_contribution_satoshis` used in `splice_init` or `splice_ack`,
     or in previous RBF attempts.
