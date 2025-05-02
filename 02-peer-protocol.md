@@ -3296,8 +3296,6 @@ A node:
         message before sending any other messages for that channel.
 
 The sending node:
-  - MUST set `next_commitment_number` to the commitment number of the
-  next `commitment_signed` it expects to receive.
   - MUST set `next_revocation_number` to the commitment number of the
   next `revoke_and_ack` message it expects to receive.
   - MUST set `my_current_per_commitment_point` to a valid point.
@@ -3312,6 +3310,8 @@ The sending node:
       - MUST set `next_commitment_number` to the commitment number of the `commitment_signed` it sent.
   - otherwise:
     - MUST NOT set `next_funding_txid`.
+    - MUST set `next_commitment_number` to the commitment number of the
+    next `commitment_signed` batch it expects to receive.
   - if `option_splice` was negotiated:
     - MUST set `your_last_funding_locked` to the txid of the last `splice_locked` it received.
     - if it never received `splice_locked` for any transaction, but it received `channel_ready`:
@@ -3347,25 +3347,34 @@ A node:
       a different `short_channel_id` `alias` field.
   - upon reconnection:
     - MUST ignore any redundant `channel_ready` it receives.
-  - if `next_commitment_number` is equal to the commitment number of
-  the last `commitment_signed` message the receiving node has sent:
-    - MUST reuse the same commitment number for its next `commitment_signed`.
+  - if it has received `next_funding_txid`:
+    - if `next_commitment_number` matches the last `commitment_signed` message
+    that was already sent for the latest interactive transaction construction:
+      - MUST retransmit `commitment_signed` for the latest interactive
+      transaction construction.
+      - MUST use `next_commitment_number` + 1 for its next `commitment_signed`
+      batch.
   - otherwise:
-    - if `next_commitment_number` is not 1 greater than the
-  commitment number of the last `commitment_signed` message the receiving
-  node has sent:
-      - SHOULD send an `error` and fail the channel.
-    - if it has not sent `commitment_signed`, AND `next_commitment_number`
-    is not equal to 1:
-      - SHOULD send an `error` and fail the channel.
+    - if `next_commitment_number` is equal to the commitment number of
+    the last `commitment_signed` message batch the receiving node has sent:
+      - MUST reuse the same commitment number for its next `commitment_signed`
+      batch.
+    - otherwise:
+      - if `next_commitment_number` is not 1 greater than the
+    commitment number of the last `commitment_signed` message batch the
+    receiving node has sent:
+        - SHOULD send an `error` and fail the channel.
+      - if it has not sent the `commitment_signed` batch, AND
+      `next_commitment_number` is not equal to 1:
+        - SHOULD send an `error` and fail the channel.
   - if `next_revocation_number` is equal to the commitment number of
   the last `revoke_and_ack` the receiving node sent, AND the receiving node
   hasn't already received a `closing_signed`:
     - MUST re-send the `revoke_and_ack`.
-    - if it has previously sent a `commitment_signed` that needs to be
+    - if it has previously sent a `commitment_signed` bacth that needs to be
     retransmitted:
-      - MUST retransmit `revoke_and_ack` and `commitment_signed` in the same
-      relative order as initially transmitted.
+      - MUST retransmit `revoke_and_ack` and `commitment_signed` batch in the
+      same relative order as initially transmitted.
   - otherwise:
     - if `next_revocation_number` is not equal to 1 greater than the
     commitment number of the last `revoke_and_ack` the receiving node has sent:
@@ -3465,7 +3474,7 @@ by the remote node.
 Note that the `next_commitment_number` starts at 1, since
 commitment number 0 is created during opening.
 `next_revocation_number` will be 0 until the
-`commitment_signed` for commitment number 1 is send and then
+`commitment_signed` batch for commitment number 1 is send and then
 the revocation for commitment number 0 is received.
 
 `channel_ready` is implicitly acknowledged by the start of normal
