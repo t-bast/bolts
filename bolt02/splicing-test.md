@@ -777,9 +777,11 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
      |----------------------------->|
      |       update_add_htlc        |
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |----------------------X       |
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |----------------------X       |
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |----------------------X       |
      |                              | Active commitments:
      |                              | 
@@ -792,15 +794,19 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
      |----------------------------->|
      |      channel_reestablish     | next_funding_txid = FundingTx2, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |----------------------------->|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |----------------------------->|
      |       revoke_and_ack         |
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |<-----------------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |<-----------------------------|
      |       revoke_and_ack         |
      |----------------------------->|
@@ -856,15 +862,19 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |----------------------------->|
      |       update_add_htlc        |
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |----------------------------->|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |----------------------------->|
      |       revoke_and_ack         |
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |       X----------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |       X----------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |       X----------------------|
      |                              | Active commitments:
      |                              | 
@@ -877,9 +887,11 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |----------------------------->|
      |      channel_reestablish     | next_funding_txid = FundingTx2, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |<-----------------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |<-----------------------------|
      |       revoke_and_ack         |
      |----------------------------->|
@@ -935,15 +947,19 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |----------------------------->|
      |       update_add_htlc        |
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |----------------------------->|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |----------------------------->|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |----------------------------->|
      |       revoke_and_ack         |
      |       X----------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |       X----------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |       X----------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |       X----------------------|
      |                              | Active commitments:
      |                              | 
@@ -958,9 +974,11 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |<-----------------------------|
      |       revoke_and_ack         |
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx1, commitment_number = 11
+     |         start_batch          | batch_size = 2
      |<-----------------------------|
-     |         commit_sig           | batch_size = 2, funding_txid = FundingTx2, commitment_number = 11
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |<-----------------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
      |<-----------------------------|
      |       revoke_and_ack         |
      |----------------------------->|
