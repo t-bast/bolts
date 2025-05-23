@@ -53,9 +53,15 @@ The only `interactive-tx` messages we explicitly list are the consecutive `tx_co
 
 We also assume that both peers use the same `commitment_number` for simplicity.
 
+Comprehensive testing should include:
+* Splice-in, Splice-out and their sequential combinations.
+* Peers that have sufficient balance after the initial funding transaction.
+* Peers that have sufficient balance via htlcs.
+* Peers with different `commitment_number`.
+
 ### Successful single splice
 
-Let's warm up with the simplest possible flow: a splice transaction that confirms without any disconnection.
+Let's warm up with the simplest possible flow: a splice transaction that confirms without any disconnection. This flow should be tested for different scenarios, such as:
 
 ```text
 Initial active commitments:
