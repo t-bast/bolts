@@ -792,7 +792,7 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
      |                              |
      |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |----------------------------->|
-     |      channel_reestablish     | next_funding_txid = FundingTx2, next_commitment_number = 11, next_revocation_number = 10
+     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
      |         start_batch          | batch_size = 2
      |----------------------------->|
@@ -822,7 +822,7 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
 
 In this scenario, a disconnection happens when both sides have sent and received `tx_signatures`.
 Both signers also send new signatures for additional changes to apply after their `tx_signatures`.
-The first signer has received the second signers `revoke_and_ack` message for the channel update.
+The first signer has received the second signer's `revoke_and_ack` message for the channel update.
 They are able to resume the signature exchange on reconnection.
 
 ```text
@@ -833,7 +833,7 @@ Initial active commitments:
    | FundingTx1 |
    +------------+
 
-Alice initiates a splice, but disconnects before Bob receives her tx_signatures and new updates:
+Alice initiates a splice, but disconnects before she receives Bob's commit_sigs for new updates:
 
    Alice                           Bob
      |             stfu             |
@@ -885,7 +885,7 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |                              |
      |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 11
      |----------------------------->|
-     |      channel_reestablish     | next_funding_txid = FundingTx2, next_commitment_number = 11, next_revocation_number = 10
+     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
      |         start_batch          | batch_size = 2
      |<-----------------------------|
@@ -903,11 +903,11 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |                              |    +------------+        +------------+
 ```
 
-### Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; revoke_and_ack not received
+### Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; `revoke_and_ack` not received
 
 In this scenario, a disconnection happens when both sides have sent and received `tx_signatures`.
 Both signers also send new signatures for additional changes to apply after their `tx_signatures`.
-The first signer has **not** received the second signers `revoke_and_ack` message for the channel update.
+The first signer has **not** received the second signer's `revoke_and_ack` message for the channel update.
 They are able to resume the signature exchange on reconnection.
 
 ```text
@@ -918,7 +918,7 @@ Initial active commitments:
    | FundingTx1 |
    +------------+
 
-Alice initiates a splice, but disconnects before Bob receives her tx_signatures and new updates:
+Alice initiates a splice, but disconnects before Bob receives her revoke_and_ack and commit_sigs for new updates:
 
    Alice                           Bob
      |             stfu             |
@@ -970,7 +970,7 @@ Alice initiates a splice, but disconnects before Bob receives her tx_signatures 
      |                              |
      |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |----------------------------->|
-     |      channel_reestablish     | next_funding_txid = FundingTx2, next_commitment_number = 11, next_revocation_number = 10
+     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
      |       revoke_and_ack         |
      |<-----------------------------|
