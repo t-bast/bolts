@@ -16,9 +16,8 @@ We detail the exact flow of messages for each scenario, and highlight several ed
   * [Disconnection with both sides sending `tx_signatures` and channel updates](#disconnection-with-both-sides-sending-tx_signatures-and-channel-updates)
   * [Disconnection with concurrent `splice_locked`](#disconnection-with-concurrent-splice_locked)
   * [Disconnection after exchanging `tx_signatures` and one side sends `commit_sig` for channel update](#disconnection-after-exchanging-tx_signatures-and-one-side-sends-commit_sig-for-channel-update)
-  * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update)
   * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; `revoke_and_ack` not received](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update-revoke_and_ack-not-received)
-
+  * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update)
 ## Terminology
 
 We call "active commitments" the set of valid commitment transactions to which updates (`update_add_htlc`, `update_fulfill_htlc`, `update_fail_htlc`, `update_fail_malformed_htlc`, `update_fee`) must be applied.
@@ -820,91 +819,6 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
      |                              |    +------------+        +------------+
 ```
 
-### Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update
-
-In this scenario, a disconnection happens when both sides have sent and received `tx_signatures`.
-Both signers also send new signatures for additional changes to apply after their `tx_signatures`.
-The first signer has received the second signer's `revoke_and_ack` message for the channel update.
-They are able to resume the signature exchange on reconnection.
-
-```text
-Initial active commitments:
-
-   commitment_number = 10
-   +------------+
-   | FundingTx1 |
-   +------------+
-
-Alice initiates a splice, but disconnects before she receives Bob's commit_sigs for new updates:
-
-   Alice                           Bob
-     |             stfu             |
-     |----------------------------->|
-     |             stfu             |
-     |<-----------------------------|
-     |          splice_init         |
-     |----------------------------->|
-     |          splice_ack          |
-     |<-----------------------------|
-     |                              |
-     |       <interactive-tx>       |
-     |<---------------------------->|
-     |                              |
-     |         tx_complete          |
-     |----------------------------->|
-     |         tx_complete          |
-     |<-----------------------------|
-     |         commit_sig           |
-     |----------------------------->|
-     |         commit_sig           |
-     |<-----------------------------|
-     |        tx_signatures         |
-     |<-----------------------------|
-     |        tx_signatures         |
-     |----------------------------->|
-     |       update_add_htlc        |
-     |----------------------------->|
-     |         start_batch          | batch_size = 2
-     |----------------------------->|
-     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
-     |----------------------------->|
-     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
-     |----------------------------->|
-     |       revoke_and_ack         |
-     |<-----------------------------|
-     |         start_batch          | batch_size = 2
-     |       X----------------------|
-     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
-     |       X----------------------|
-     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
-     |       X----------------------|
-     |                              | Active commitments:
-     |                              | 
-     |                              |    commitment_number = 10
-     |                              |    +------------+        +------------+
-     |                              |    | FundingTx1 |------->| FundingTx2 |
-     |                              |    +------------+        +------------+
-     |                              |
-     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 11
-     |----------------------------->|
-     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
-     |<-----------------------------|
-     |         start_batch          | batch_size = 2
-     |<-----------------------------|
-     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
-     |<-----------------------------|
-     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
-     |<-----------------------------|
-     |       revoke_and_ack         |
-     |----------------------------->|
-     |                              | Active commitments:
-     |                              | 
-     |                              |    commitment_number = 11
-     |                              |    +------------+        +------------+
-     |                              |    | FundingTx1 |------->| FundingTx2 |
-     |                              |    +------------+        +------------+
-```
-
 ### Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; `revoke_and_ack` not received
 
 In this scenario, a disconnection happens when both sides have sent and received `tx_signatures`.
@@ -975,6 +889,91 @@ Alice initiates a splice, but disconnects before Bob receives her revoke_and_ack
      |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
      |       revoke_and_ack         |
+     |<-----------------------------|
+     |         start_batch          | batch_size = 2
+     |<-----------------------------|
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |<-----------------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
+     |<-----------------------------|
+     |       revoke_and_ack         |
+     |----------------------------->|
+     |                              | Active commitments:
+     |                              | 
+     |                              |    commitment_number = 11
+     |                              |    +------------+        +------------+
+     |                              |    | FundingTx1 |------->| FundingTx2 |
+     |                              |    +------------+        +------------+
+```
+
+### Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update
+
+In this scenario, a disconnection happens when both sides have sent and received `tx_signatures`.
+Both signers also send new signatures for additional changes to apply after their `tx_signatures`.
+The first signer has received the second signer's `revoke_and_ack` message for the channel update.
+They are able to resume the signature exchange on reconnection.
+
+```text
+Initial active commitments:
+
+   commitment_number = 10
+   +------------+
+   | FundingTx1 |
+   +------------+
+
+Alice initiates a splice, but disconnects before she receives Bob's commit_sigs for new updates:
+
+   Alice                           Bob
+     |             stfu             |
+     |----------------------------->|
+     |             stfu             |
+     |<-----------------------------|
+     |          splice_init         |
+     |----------------------------->|
+     |          splice_ack          |
+     |<-----------------------------|
+     |                              |
+     |       <interactive-tx>       |
+     |<---------------------------->|
+     |                              |
+     |         tx_complete          |
+     |----------------------------->|
+     |         tx_complete          |
+     |<-----------------------------|
+     |         commit_sig           |
+     |----------------------------->|
+     |         commit_sig           |
+     |<-----------------------------|
+     |        tx_signatures         |
+     |<-----------------------------|
+     |        tx_signatures         |
+     |----------------------------->|
+     |       update_add_htlc        |
+     |----------------------------->|
+     |         start_batch          | batch_size = 2
+     |----------------------------->|
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |----------------------------->|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
+     |----------------------------->|
+     |       revoke_and_ack         |
+     |<-----------------------------|
+     |         start_batch          | batch_size = 2
+     |       X----------------------|
+     |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
+     |       X----------------------|
+     |         commit_sig           | funding_txid = FundingTx2, commitment_number = 11
+     |       X----------------------|
+     |                              | Active commitments:
+     |                              | 
+     |                              |    commitment_number = 10
+     |                              |    +------------+        +------------+
+     |                              |    | FundingTx1 |------->| FundingTx2 |
+     |                              |    +------------+        +------------+
+     |                              |
+     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 11
+     |----------------------------->|
+     |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
      |         start_batch          | batch_size = 2
      |<-----------------------------|
