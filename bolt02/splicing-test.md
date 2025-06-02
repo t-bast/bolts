@@ -17,7 +17,7 @@ We detail the exact flow of messages for each scenario, and highlight several ed
   * [Disconnection with concurrent `splice_locked`](#disconnection-with-concurrent-splice_locked)
   * [Disconnection after exchanging `tx_signatures` and one side sends `commit_sig` for channel update](#disconnection-after-exchanging-tx_signatures-and-one-side-sends-commit_sig-for-channel-update)
   * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update)
-  * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; revoke_and_ack not received](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update-revoke_and_ack-not-received)
+  * [Disconnection after exchanging `tx_signatures` and both sides send `commit_sig` for channel update; `revoke_and_ack` not received](#disconnection-after-exchanging-tx_signatures-and-both-sides-send-commit_sig-for-channel-update-revoke_and_ack-not-received)
 
 ## Terminology
 
@@ -794,6 +794,8 @@ Alice initiates a splice, but disconnects before Bob receives her commit_sigs fo
      |----------------------------->|
      |      channel_reestablish     | next_funding_txid = null, next_commitment_number = 11, next_revocation_number = 10
      |<-----------------------------|
+     |       update_add_htlc        |
+     |----------------------------->|
      |         start_batch          | batch_size = 2
      |----------------------------->|
      |         commit_sig           | funding_txid = FundingTx1, commitment_number = 11
