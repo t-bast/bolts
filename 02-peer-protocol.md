@@ -816,12 +816,12 @@ The sending node:
 
 The sending node SHOULD:
   - set `to_self_delay` sufficient to ensure the sender can irreversibly spend a commitment transaction output, in case of misbehavior by the receiver.
+  - set `dust_limit_satoshis` to a sufficient value to allow commitment transactions to propagate through the Bitcoin network.
   - set `htlc_minimum_msat` to the minimum value HTLC it's willing to accept from this peer.
   - when using `zero_fee_commitments` or `option_anchors`:
     - set `dust_limit_satoshis` to a sufficient value to ensure that it is economical to spend, taking the cost of HTLC transactions into account.
   - otherwise (not using `zero_fee_commitments` or `option_anchors`):
     - set `feerate_per_kw` to at least the rate it estimates would cause the transaction to be immediately included in a block.
-    - set `dust_limit_satoshis` to a sufficient value to allow commitment transactions to propagate through the Bitcoin network.
 
 The receiving node MUST:
   - ignore undefined bits in `channel_flags`.
@@ -3271,8 +3271,7 @@ A sending node:
 
 A receiving node:
   - if `zero_fee_commitments` is used:
-    - MUST ignore the message.
-    - SHOULD send a `warning` and disconnect.
+    - MUST send an `error` and fail the channel.
   - if the `update_fee` is too low for timely processing, OR is unreasonably large:
     - MUST send a `warning` and close the connection, or send an
       `error` and fail the channel.
